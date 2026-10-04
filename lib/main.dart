@@ -40,7 +40,7 @@ class CourseExplorerApp extends StatelessWidget {
 }
 
 // ==========================================
-// SHELL NAVIGASI (ADAPTIF)
+// SHELL NAVIGASI (ADAPTIF) - TAHAP 11
 // ==========================================
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -55,15 +55,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   final List<Widget> _pages = [
     const HomePage(),
     const CoursesPage(),
-    const ProfilePage(), // Berisi Profile + Feedback Form
+    const ProfilePage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 600) {
-          // COMPACT: NavigationBar di bawah
+        if (constraints.maxWidth < 840) {
           return Scaffold(
             body: _pages[currentIndex],
             bottomNavigationBar: NavigationBar(
@@ -84,7 +83,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             ),
           );
         } else {
-          // EXPANDED: NavigationRail di samping
           return Scaffold(
             body: Row(
               children: [
@@ -164,7 +162,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE (List vs Grid)
+// 2. COURSES PAGE (GRIDVIEW 1, 2, 3 KOLOM)
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -207,45 +205,33 @@ class _CoursesPageState extends State<CoursesPage> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              // Jika lebar kurang dari 600px -> Gunakan ListView (Compact)
+              int jumlahKolom;
               if (constraints.maxWidth < 600) {
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: courses.length,
-                  itemBuilder: (context, index) {
-                    final course = courses[index] as Map<String, dynamic>;
-                    return CourseCard(
-                      // Menggunakan Reusable Widget
-                      course: course,
-                      isFavorite: favoriteCourses.contains(course['code']),
-                      onFavoriteToggle: () => toggleFavorite(course['code']),
-                    );
-                  },
-                );
+                jumlahKolom = 1;
+              } else if (constraints.maxWidth < 840) {
+                jumlahKolom = 2;
+              } else {
+                jumlahKolom = 3;
               }
-              // Jika lebar >= 600px -> Gunakan GridView (Expanded)
-              else {
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // 2 Kolom untuk tablet/desktop
-                    childAspectRatio:
-                        3.0, // Rasio agar kartu tidak terlalu tinggi
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: courses.length,
-                  itemBuilder: (context, index) {
-                    final course = courses[index] as Map<String, dynamic>;
-                    return CourseCard(
-                      // Menggunakan Reusable Widget yang sama
-                      course: course,
-                      isFavorite: favoriteCourses.contains(course['code']),
-                      onFavoriteToggle: () => toggleFavorite(course['code']),
-                    );
-                  },
-                );
-              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: jumlahKolom,
+                  childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: courses.length,
+                itemBuilder: (context, index) {
+                  final course = courses[index] as Map<String, dynamic>;
+                  return CourseCard(
+                    course: course,
+                    isFavorite: favoriteCourses.contains(course['code']),
+                    onFavoriteToggle: () => toggleFavorite(course['code']),
+                  );
+                },
+              );
             },
           );
         },
@@ -274,7 +260,7 @@ class CourseCard extends StatelessWidget {
     final isDone = course['status'] == 'done';
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         onTap: () async {
@@ -344,7 +330,7 @@ class CourseCard extends StatelessWidget {
 }
 
 // ==========================================
-// 3. PROFILE PAGE (Menampung Form Feedback)
+// 3. PROFILE PAGE
 // ==========================================
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -357,7 +343,6 @@ class ProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // Identitas Wajib
             const CircleAvatar(
               radius: 50,
               backgroundColor: Colors.blueAccent,
@@ -373,8 +358,6 @@ class ProfilePage extends StatelessWidget {
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const Divider(height: 40, thickness: 1),
-
-            // Reusable Widget untuk Form
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -392,7 +375,7 @@ class ProfilePage extends StatelessWidget {
 }
 
 // ==========================================
-// REUSABLE WIDGET 2: FeedbackFormWidget
+// REUSABLE WIDGET 2: FeedbackFormWidget (Dialog & Loading)
 // ==========================================
 class FeedbackFormWidget extends StatefulWidget {
   const FeedbackFormWidget({super.key});
