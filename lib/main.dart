@@ -51,8 +51,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   int currentIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(), // Diubah untuk Tahap 2
-    const CoursesPage(),
+    const HomePage(),
+    const CoursesPage(), // Tahap 3 - Lifting State Up (Direvisi)
     const ProfilePage(),
   ];
 
@@ -119,18 +119,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 }
 
 // ==========================================
-// 1. HOME PAGE (Tahap 2 - Simulasi Prop Drilling)
+// 1. HOME PAGE (Normal)
 // ==========================================
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  // Shared state: Dimiliki oleh Parent
-  int _favoritesCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -144,31 +136,21 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.warning_amber_rounded,
-              size: 80,
-              color: Colors.orange,
+          children: const [
+            Icon(Icons.explore, size: 100, color: Colors.blueAccent),
+            SizedBox(height: 24),
+            Text(
+              'Selamat Datang di Course Explorer!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Eksperimen Tahap 2: Prop Drilling',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Text(
+            SizedBox(height: 12),
+            Text(
               '$studentId - $studentName',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-            const SizedBox(height: 32),
-
-            // Parent meneruskan data ke Child 1
-            ChildSatu(
-              favoritesCount: _favoritesCount,
-              onAdd: () {
-                setState(
-                  () => _favoritesCount++,
-                ); // Action naik ke pemilik state
-              },
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -177,68 +159,8 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Child 1 sama sekali tidak butuh data ini, tapi TERPAKSA menerimanya
-class ChildSatu extends StatelessWidget {
-  final int favoritesCount;
-  final VoidCallback onAdd;
-
-  const ChildSatu({
-    super.key,
-    required this.favoritesCount,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.orange[100],
-      child: Column(
-        children: [
-          const Text('Saya Child 1 (Hanya Perantara)'),
-          const SizedBox(height: 8),
-          ChildDua(favoritesCount: favoritesCount, onAdd: onAdd),
-        ],
-      ),
-    );
-  }
-}
-
-// Child 2 baru benar-benar menggunakan datanya
-class ChildDua extends StatelessWidget {
-  final int favoritesCount;
-  final VoidCallback onAdd;
-
-  const ChildDua({
-    super.key,
-    required this.favoritesCount,
-    required this.onAdd,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.orange[300],
-      child: Column(
-        children: [
-          const Text('Saya Child 2 (Tujuan Akhir)'),
-          Text(
-            'Jumlah Favorit: $favoritesCount',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          ElevatedButton(
-            onPressed: onAdd,
-            child: const Text('Tambah Favorit via Callback'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ==========================================
-// 2. COURSES PAGE
+// 2. COURSES PAGE (Tahap 3 - Lifting State Up - REVISI IDENTITAS)
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -248,6 +170,8 @@ class CoursesPage extends StatefulWidget {
 
 class _CoursesPageState extends State<CoursesPage> {
   late Future<Map<String, dynamic>> studentFuture;
+
+  // SINGLE SOURCE OF TRUTH (Lifting State Up)
   Set<String> favoriteCourses = {};
 
   @override
@@ -256,6 +180,7 @@ class _CoursesPageState extends State<CoursesPage> {
     studentFuture = loadStudentData();
   }
 
+  // CALLBACK FUNCTION
   void toggleFavorite(String code) {
     setState(() {
       favoriteCourses.contains(code)
@@ -267,7 +192,7 @@ class _CoursesPageState extends State<CoursesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Materi (JSON)')),
+      appBar: AppBar(title: const Text('Daftar Materi (Lifting State)')),
       body: FutureBuilder<Map<String, dynamic>>(
         future: studentFuture,
         builder: (context, snapshot) {
@@ -278,30 +203,53 @@ class _CoursesPageState extends State<CoursesPage> {
 
           final courses = snapshot.data!['courses'] as List<dynamic>;
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              int jumlahKolom = constraints.maxWidth < 600
-                  ? 1
-                  : (constraints.maxWidth < 840 ? 2 : 3);
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: jumlahKolom,
-                  childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+          return Column(
+            children: [
+              // IDENTITAS DITAMBAHKAN DI SINI AGAR MUNCUL SAAT SCREENSHOT
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
                 ),
-                itemCount: courses.length,
-                itemBuilder: (context, index) {
-                  final course = courses[index] as Map<String, dynamic>;
-                  return CourseCard(
-                    course: course,
-                    isFavorite: favoriteCourses.contains(course['code']),
-                    onFavoriteToggle: () => toggleFavorite(course['code']),
-                  );
-                },
-              );
-            },
+                color: Colors.blue[50],
+                child: const Text(
+                  '$studentId - $studentName',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int jumlahKolom = constraints.maxWidth < 600
+                        ? 1
+                        : (constraints.maxWidth < 840 ? 2 : 3);
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: jumlahKolom,
+                        childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: courses.length,
+                      itemBuilder: (context, index) {
+                        final course = courses[index] as Map<String, dynamic>;
+                        return CourseCard(
+                          course: course,
+                          isFavorite: favoriteCourses.contains(course['code']),
+                          onFavoriteToggle: () =>
+                              toggleFavorite(course['code']),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -309,6 +257,7 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 }
 
+// CHILD WIDGET
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final bool isFavorite;
