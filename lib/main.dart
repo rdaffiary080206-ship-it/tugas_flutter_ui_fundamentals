@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:provider/provider.dart';
+
+import 'providers/course_provider.dart';
 
 // IDENTITAS MAHASISWA
 const String studentId = '2415051020';
@@ -15,8 +18,16 @@ Future<Map<String, dynamic>> loadStudentData() async {
   return jsonDecode(jsonString) as Map<String, dynamic>;
 }
 
+// ==========================================
+// TAHAP 6: MEMASANG PROVIDER DI PUNCAK APLIKASI
+// ==========================================
 void main() {
-  runApp(const CourseExplorerApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => CourseState(),
+      child: const CourseExplorerApp(),
+    ),
+  );
 }
 
 class CourseExplorerApp extends StatelessWidget {
@@ -53,7 +64,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   final List<Widget> _pages = [
     const HomePage(),
     const CoursesPage(),
-    ProfilePage(), // Buang 'const' karena di Tahap 4 ini bukan konstanta lagi
+    ProfilePage(),
   ];
 
   @override
@@ -160,7 +171,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE (Tahap 3)
+// 2. COURSES PAGE
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -330,12 +341,11 @@ class CourseCard extends StatelessWidget {
 }
 
 // ==========================================
-// 3. PROFILE PAGE (Tahap 4 - ValueNotifier)
+// 3. PROFILE PAGE
 // ==========================================
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
 
-  // Membuat ValueNotifier
   final ValueNotifier<int> _klikCounter = ValueNotifier<int>(0);
 
   @override
@@ -362,7 +372,6 @@ class ProfilePage extends StatelessWidget {
             ),
             const Divider(height: 40, thickness: 1),
 
-            // Eksperimen ValueNotifier
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -396,7 +405,7 @@ class ProfilePage extends StatelessWidget {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {
-                      _klikCounter.value++; // Ubah nilai, UI otomatis rebuild
+                      _klikCounter.value++;
                     },
                     child: const Text('Tambah Klik (Tanpa setState)'),
                   ),
