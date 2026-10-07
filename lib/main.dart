@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
-// IDENTITAS MAHASISWA (Tahap 0)
+// IDENTITAS MAHASISWA
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
 
@@ -51,7 +51,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   int currentIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(),
+    const HomePage(), // Diubah untuk Tahap 2
     const CoursesPage(),
     const ProfilePage(),
   ];
@@ -119,10 +119,18 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 }
 
 // ==========================================
-// 1. HOME PAGE
+// 1. HOME PAGE (Tahap 2 - Simulasi Prop Drilling)
 // ==========================================
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // Shared state: Dimiliki oleh Parent
+  int _favoritesCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -136,25 +144,94 @@ class HomePage extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.explore, size: 100, color: Colors.blueAccent),
-            SizedBox(height: 24),
-            Text(
-              'Selamat Datang di Course Explorer!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          children: [
+            const Icon(
+              Icons.warning_amber_rounded,
+              size: 80,
+              color: Colors.orange,
             ),
-            SizedBox(height: 12),
-            // Tampilan Identitas
-            Text(
+            const SizedBox(height: 16),
+            const Text(
+              'Eksperimen Tahap 2: Prop Drilling',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Text(
               '$studentId - $studentName',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 32),
+
+            // Parent meneruskan data ke Child 1
+            ChildSatu(
+              favoritesCount: _favoritesCount,
+              onAdd: () {
+                setState(
+                  () => _favoritesCount++,
+                ); // Action naik ke pemilik state
+              },
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Child 1 sama sekali tidak butuh data ini, tapi TERPAKSA menerimanya
+class ChildSatu extends StatelessWidget {
+  final int favoritesCount;
+  final VoidCallback onAdd;
+
+  const ChildSatu({
+    super.key,
+    required this.favoritesCount,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.orange[100],
+      child: Column(
+        children: [
+          const Text('Saya Child 1 (Hanya Perantara)'),
+          const SizedBox(height: 8),
+          ChildDua(favoritesCount: favoritesCount, onAdd: onAdd),
+        ],
+      ),
+    );
+  }
+}
+
+// Child 2 baru benar-benar menggunakan datanya
+class ChildDua extends StatelessWidget {
+  final int favoritesCount;
+  final VoidCallback onAdd;
+
+  const ChildDua({
+    super.key,
+    required this.favoritesCount,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.orange[300],
+      child: Column(
+        children: [
+          const Text('Saya Child 2 (Tujuan Akhir)'),
+          Text(
+            'Jumlah Favorit: $favoritesCount',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          ElevatedButton(
+            onPressed: onAdd,
+            child: const Text('Tambah Favorit via Callback'),
+          ),
+        ],
       ),
     );
   }
@@ -165,7 +242,6 @@ class HomePage extends StatelessWidget {
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
-
   @override
   State<CoursesPage> createState() => _CoursesPageState();
 }
@@ -427,7 +503,7 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
 }
 
 // ==========================================
-// COURSE DETAIL PAGE (Tahap 1 - Local State)
+// COURSE DETAIL PAGE
 // ==========================================
 class CourseDetailPage extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -438,7 +514,6 @@ class CourseDetailPage extends StatefulWidget {
 }
 
 class _CourseDetailPageState extends State<CourseDetailPage> {
-  // Local State: Hanya berlaku dan diingat di halaman detail ini saja
   bool _showDetails = false;
 
   @override
