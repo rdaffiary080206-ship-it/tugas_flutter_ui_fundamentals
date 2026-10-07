@@ -52,8 +52,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const CoursesPage(), // Tahap 3 - Lifting State Up (Direvisi)
-    const ProfilePage(),
+    const CoursesPage(),
+    ProfilePage(), // Buang 'const' karena di Tahap 4 ini bukan konstanta lagi
   ];
 
   @override
@@ -119,7 +119,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 }
 
 // ==========================================
-// 1. HOME PAGE (Normal)
+// 1. HOME PAGE
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -160,7 +160,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE (Tahap 3 - Lifting State Up - REVISI IDENTITAS)
+// 2. COURSES PAGE (Tahap 3)
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -171,7 +171,6 @@ class CoursesPage extends StatefulWidget {
 class _CoursesPageState extends State<CoursesPage> {
   late Future<Map<String, dynamic>> studentFuture;
 
-  // SINGLE SOURCE OF TRUTH (Lifting State Up)
   Set<String> favoriteCourses = {};
 
   @override
@@ -180,7 +179,6 @@ class _CoursesPageState extends State<CoursesPage> {
     studentFuture = loadStudentData();
   }
 
-  // CALLBACK FUNCTION
   void toggleFavorite(String code) {
     setState(() {
       favoriteCourses.contains(code)
@@ -205,7 +203,6 @@ class _CoursesPageState extends State<CoursesPage> {
 
           return Column(
             children: [
-              // IDENTITAS DITAMBAHKAN DI SINI AGAR MUNCUL SAAT SCREENSHOT
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -257,7 +254,6 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 }
 
-// CHILD WIDGET
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final bool isFavorite;
@@ -334,15 +330,18 @@ class CourseCard extends StatelessWidget {
 }
 
 // ==========================================
-// 3. PROFILE PAGE
+// 3. PROFILE PAGE (Tahap 4 - ValueNotifier)
 // ==========================================
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  ProfilePage({super.key});
+
+  // Membuat ValueNotifier
+  final ValueNotifier<int> _klikCounter = ValueNotifier<int>(0);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil & Feedback')),
+      appBar: AppBar(title: const Text('Profil (ValueNotifier)')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -362,6 +361,50 @@ class ProfilePage extends StatelessWidget {
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const Divider(height: 40, thickness: 1),
+
+            // Eksperimen ValueNotifier
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Eksperimen ValueNotifier (Tahap 4)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder<int>(
+                    valueListenable: _klikCounter,
+                    builder: (context, value, child) {
+                      return Text(
+                        'Tombol ditekan: $value kali',
+                        style: const TextStyle(fontSize: 20),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      _klikCounter.value++; // Ubah nilai, UI otomatis rebuild
+                    },
+                    child: const Text('Tambah Klik (Tanpa setState)'),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
