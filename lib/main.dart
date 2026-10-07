@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
+// Menyiapkan project untuk pertemuan 6
 
 Future<Map<String, dynamic>> loadStudentData() async {
   final jsonString = await rootBundle.loadString(
