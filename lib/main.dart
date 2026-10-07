@@ -4,9 +4,9 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+// IDENTITAS MAHASISWA (Tahap 0)
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
-// Menyiapkan project untuk pertemuan 6
 
 Future<Map<String, dynamic>> loadStudentData() async {
   final jsonString = await rootBundle.loadString(
@@ -40,9 +40,6 @@ class CourseExplorerApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// SHELL NAVIGASI (ADAPTIF) - TAHAP 11
-// ==========================================
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
 
@@ -147,8 +144,9 @@ class HomePage extends StatelessWidget {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
+            // Tampilan Identitas
             Text(
-              '2415051020 - I Putu Anggara Rega Daffiary',
+              '$studentId - $studentName',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 16,
@@ -163,7 +161,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE (GRIDVIEW 1, 2, 3 KOLOM)
+// 2. COURSES PAGE
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -206,15 +204,9 @@ class _CoursesPageState extends State<CoursesPage> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              int jumlahKolom;
-              if (constraints.maxWidth < 600) {
-                jumlahKolom = 1;
-              } else if (constraints.maxWidth < 840) {
-                jumlahKolom = 2;
-              } else {
-                jumlahKolom = 3;
-              }
-
+              int jumlahKolom = constraints.maxWidth < 600
+                  ? 1
+                  : (constraints.maxWidth < 840 ? 2 : 3);
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -241,9 +233,6 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 }
 
-// ==========================================
-// REUSABLE WIDGET 1: CourseCard
-// ==========================================
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final bool isFavorite;
@@ -259,7 +248,6 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = course['status'] == 'done';
-
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.hardEdge,
@@ -272,16 +260,6 @@ class CourseCard extends StatelessWidget {
             ),
           );
           if (result == true) onFavoriteToggle();
-        },
-        onLongPress: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Info: ${course['title']} berbobot ${course['credits']} SKS',
-              ),
-              duration: const Duration(seconds: 2),
-            ),
-          );
         },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -351,11 +329,11 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Text(
-              'I Putu Anggara Rega Daffiary',
+              '$studentName',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const Text(
-              'NIM: 2415051020',
+              'NIM: $studentId',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const Divider(height: 40, thickness: 1),
@@ -375,12 +353,8 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-// ==========================================
-// REUSABLE WIDGET 2: FeedbackFormWidget (Dialog & Loading)
-// ==========================================
 class FeedbackFormWidget extends StatefulWidget {
   const FeedbackFormWidget({super.key});
-
   @override
   State<FeedbackFormWidget> createState() => _FeedbackFormWidgetState();
 }
@@ -410,12 +384,9 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
               prefixIcon: Icon(Icons.comment),
             ),
             maxLines: 3,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty)
-                return 'Komentar wajib diisi';
-              if (value.trim().length < 5) return 'Minimal 5 karakter!';
-              return null;
-            },
+            validator: (value) => value == null || value.trim().length < 5
+                ? 'Minimal 5 karakter!'
+                : null,
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -430,60 +401,23 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
                   ? null
                   : () async {
                       if (_formKey.currentState!.validate()) {
-                        final bool? confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Konfirmasi'),
-                            content: const Text('Kirim feedback sekarang?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Batal'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Kirim'),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (confirm == true) {
-                          setState(() => _isLoading = true);
-                          await Future.delayed(const Duration(seconds: 2));
-
-                          if (context.mounted) {
-                            setState(() => _isLoading = false);
-                            _commentController.clear();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Feedback terkirim! Terima kasih.',
-                                ),
-                                backgroundColor: Colors.green,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
+                        setState(() => _isLoading = true);
+                        await Future.delayed(const Duration(seconds: 2));
+                        if (context.mounted) {
+                          setState(() => _isLoading = false);
+                          _commentController.clear();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Feedback terkirim!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
                         }
                       }
                     },
               child: _isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 3,
-                      ),
-                    )
-                  : const Text(
-                      'Kirim Feedback',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Kirim Feedback'),
             ),
           ),
         ],
@@ -493,12 +427,19 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
 }
 
 // ==========================================
-// COURSE DETAIL PAGE
+// COURSE DETAIL PAGE (Tahap 1 - Local State)
 // ==========================================
-class CourseDetailPage extends StatelessWidget {
+class CourseDetailPage extends StatefulWidget {
   final Map<String, dynamic> course;
-
   const CourseDetailPage({super.key, required this.course});
+
+  @override
+  State<CourseDetailPage> createState() => _CourseDetailPageState();
+}
+
+class _CourseDetailPageState extends State<CourseDetailPage> {
+  // Local State: Hanya berlaku dan diingat di halaman detail ini saja
+  bool _showDetails = false;
 
   @override
   Widget build(BuildContext context) {
@@ -510,7 +451,7 @@ class CourseDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '2415051020 - I Putu Anggara Rega Daffiary',
+              '$studentId - $studentName',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.blueAccent,
@@ -518,19 +459,49 @@ class CourseDetailPage extends StatelessWidget {
             ),
             const Divider(height: 30, thickness: 1),
             Text(
-              course['title'],
+              widget.course['title'],
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
-              'Kode: ${course['code']}',
+              'Kode: ${widget.course['code']}',
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
-              'SKS: ${course['credits']}',
+              'SKS: ${widget.course['credits']}',
               style: const TextStyle(fontSize: 18),
             ),
+
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              icon: Icon(
+                _showDetails ? Icons.visibility_off : Icons.visibility,
+              ),
+              label: Text(
+                _showDetails ? 'Sembunyikan Info' : 'Tampilkan Info Tambahan',
+              ),
+              onPressed: () {
+                setState(() {
+                  _showDetails = !_showDetails;
+                });
+              },
+            ),
+
+            if (_showDetails)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Ini info tambahan yang dikontrol oleh Local State (setState).',
+                  style: TextStyle(color: Colors.blueGrey),
+                ),
+              ),
+
             const Spacer(),
             Row(
               children: [
