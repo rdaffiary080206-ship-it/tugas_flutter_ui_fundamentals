@@ -6,22 +6,18 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
 import 'providers/course_provider.dart';
-// IMPORT MODEL COURSE YANG BARU DIBUAT
 import 'models/course.dart';
 
 // IDENTITAS MAHASISWA
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
 
-// TAHAP 8: UBAH TIPE KEMBALIAN JSON MENJADI LIST<COURSE>
 Future<List<Course>> loadStudentData() async {
   final jsonString = await rootBundle.loadString(
     'assets/data/student_data.json',
   );
   final Map<String, dynamic> data = jsonDecode(jsonString);
   final List<dynamic> coursesJson = data['courses'];
-
-  // Mapping data JSON mentah menjadi Objek Course
   return coursesJson.map((json) => Course.fromJson(json)).toList();
 }
 
@@ -64,15 +60,37 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int currentIndex = 0;
+  bool _isDataLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Memuat data saat aplikasi pertama kali jalan dan memasukkannya ke Provider
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    final courses = await loadStudentData();
+    if (mounted) {
+      context.read<CourseState>().setCourses(courses);
+      setState(() {
+        _isDataLoaded = true;
+      });
+    }
+  }
 
   final List<Widget> _pages = [
-    const HomePage(),
+    const HomePage(), // Telah dirombak di Tahap 9
     const CoursesPage(),
     ProfilePage(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    if (!_isDataLoaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 840) {
@@ -134,153 +152,195 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 }
 
 // ==========================================
-// 1. HOME PAGE
+// 1. HOME PAGE (Tahap 9 - Menampilkan Data Gabungan)
 // ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Memantau getter dari Provider
+    final favoritData = context.watch<CourseState>().favoriteCoursesData;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Course Explorer',
+          'Dashboard',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(Icons.explore, size: 100, color: Colors.blueAccent),
-            SizedBox(height: 24),
-            Text(
-              'Selamat Datang di Course Explorer!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            color: Colors.blue[50],
+            child: Column(
+              children: [
+                const CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.blueAccent,
+                  child: Icon(Icons.person, size: 50, color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Selamat Datang!',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '$studentId - $studentName',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                ),
+              ],
             ),
-            SizedBox(height: 12),
-            Text(
-              '$studentId - $studentName',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Mata Kuliah Favorit Anda:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ],
-        ),
+          ),
+
+          Expanded(
+            child: favoritData.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.heart_broken, size: 60, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'Belum ada materi favorit.',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: favoritData.length,
+                    itemBuilder: (context, index) {
+                      final course = favoritData[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.pink,
+                            child: Icon(
+                              Icons.favorite,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            course.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${course.code} • ${course.credits} SKS',
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                            onPressed: () {
+                              context.read<CourseState>().toggleFavorite(
+                                course.code,
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ==========================================
-// 2. COURSES PAGE (Tahap 8 - Model Integration)
+// 2. COURSES PAGE
 // ==========================================
-class CoursesPage extends StatefulWidget {
+class CoursesPage extends StatelessWidget {
   const CoursesPage({super.key});
-  @override
-  State<CoursesPage> createState() => _CoursesPageState();
-}
-
-class _CoursesPageState extends State<CoursesPage> {
-  // Ubah future ini menerima List<Course>
-  late Future<List<Course>> studentFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    studentFuture = loadStudentData();
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Karena data sudah ada di Provider, kita tidak butuh FutureBuilder lagi!
+    final courses = context.watch<CourseState>().allCourses;
     final jumlahFavorit = context.watch<CourseState>().favorites.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Daftar Materi (Model)')),
-      // Ubah tipe FutureBuilder
-      body: FutureBuilder<List<Course>>(
-        future: studentFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError)
-            return Center(child: Text('Gagal memuat: ${snapshot.error}'));
-
-          // Sekarang data langsung dikenali sebagai List of Course objects!
-          final courses = snapshot.data!;
-
-          return Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            color: Colors.blue[50],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '$studentId - $studentName',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
                 ),
-                color: Colors.blue[50],
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '$studentId - $studentName',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Total Favorit Tersimpan: $jumlahFavorit',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.pink,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  'Total Favorit Tersimpan: $jumlahFavorit',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.pink,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    int jumlahKolom = constraints.maxWidth < 600
-                        ? 1
-                        : (constraints.maxWidth < 840 ? 2 : 3);
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: jumlahKolom,
-                        childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: courses.length,
-                      itemBuilder: (context, index) {
-                        // Tidak ada casting JSON lagi di sini
-                        return CourseCard(course: courses[index]);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+          Expanded(
+            child: courses.isEmpty
+                ? const Center(child: Text('Tidak ada data courses.'))
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      int jumlahKolom = constraints.maxWidth < 600
+                          ? 1
+                          : (constraints.maxWidth < 840 ? 2 : 3);
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: jumlahKolom,
+                          childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        itemCount: courses.length,
+                        itemBuilder: (context, index) {
+                          return CourseCard(course: courses[index]);
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class CourseCard extends StatelessWidget {
-  // Sekarang menerima Model, bukan Map
   final Course course;
 
   const CourseCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
-    // Akses properti JAUH LEBIH BERSIH dengan notasi titik (.)
     final isDone = course.status == 'done';
     final courseCode = course.code;
 
@@ -517,7 +577,6 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
 // COURSE DETAIL PAGE
 // ==========================================
 class CourseDetailPage extends StatefulWidget {
-  // Menerima objek Course, bukan Map lagi
   final Course course;
   const CourseDetailPage({super.key, required this.course});
 
@@ -545,7 +604,6 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
               ),
             ),
             const Divider(height: 30, thickness: 1),
-            // Mengakses data menggunakan notasi titik
             Text(
               widget.course.title,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
