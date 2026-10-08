@@ -1,33 +1,23 @@
 // ==========================================
-// FILE: lib/main.dart (Tahap 10 - Final Architecture)
+// FILE: lib/main.dart (Tahap 11)
 // ==========================================
 import 'package:flutter/material.dart';
-
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
-// IMPORT FILE YANG SUDAH DIPISAH-PISAH
 import 'providers/course_provider.dart';
-import 'models/course.dart';
 import 'screens/home_screen.dart';
 import 'screens/courses_screen.dart';
 import 'screens/profile_screen.dart';
 
-Future<List<Course>> loadStudentData() async {
-  final jsonString = await rootBundle.loadString(
-    'assets/data/student_data.json',
-  );
-  final Map<String, dynamic> data = jsonDecode(jsonString);
-  final List<dynamic> coursesJson = data['courses'];
-  return coursesJson.map((json) => Course.fromJson(json)).toList();
-}
-
 void main() {
   runApp(
     ChangeNotifierProvider(
-      create: (context) => CourseState(),
+      create: (context) {
+        // PERUBAHAN: Panggil loadCourses() langsung saat Provider dibuat!
+        final provider = CourseState();
+        provider.loadCourses();
+        return provider;
+      },
       child: const CourseExplorerApp(),
     ),
   );
@@ -63,25 +53,7 @@ class MainNavigationShell extends StatefulWidget {
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int currentIndex = 0;
-  bool _isDataLoaded = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initData();
-  }
-
-  Future<void> _initData() async {
-    final courses = await loadStudentData();
-    if (mounted) {
-      context.read<CourseState>().setCourses(courses);
-      setState(() {
-        _isDataLoaded = true;
-      });
-    }
-  }
-
-  // MENGGUNAKAN LAYAR DARI FOLDER SCREENS
   final List<Widget> _pages = [
     const HomePage(),
     const CoursesPage(),
@@ -90,10 +62,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isDataLoaded) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
+    // KITA TIDAK BUTUH LAGI IF (!ISDATALOADED) DI SINI
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 840) {

@@ -1,5 +1,5 @@
 // ==========================================
-// FILE BARU: lib/screens/courses_screen.dart
+// FILE: lib/screens/courses_screen.dart (Tahap 11)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,11 +16,15 @@ class CoursesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final courses = context.watch<CourseState>().allCourses;
-    final jumlahFavorit = context.watch<CourseState>().favorites.length;
+    // Kita baca semua state Async dari Provider
+    final provider = context.watch<CourseState>();
+    final courses = provider.courses;
+    final isLoading = provider.isLoading;
+    final error = provider.error;
+    final jumlahFavorit = provider.favorites.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Materi (Model)')),
+      appBar: AppBar(title: const Text('Daftar Materi (Async)')),
       body: Column(
         children: [
           Container(
@@ -48,35 +52,55 @@ class CoursesPage extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(
-            child: courses.isEmpty
-                ? const Center(child: Text('Tidak ada data courses.'))
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      int jumlahKolom = constraints.maxWidth < 600
-                          ? 1
-                          : (constraints.maxWidth < 840 ? 2 : 3);
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: jumlahKolom,
-                          childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                        ),
-                        itemCount: courses.length,
-                        itemBuilder: (context, index) {
-                          return CourseCard(course: courses[index]);
-                        },
-                      );
-                    },
-                  ),
-          ),
+
+          // PENANGANAN ASYNC STATE DI SINI
+          Expanded(child: _buildBody(isLoading, error, courses)),
         ],
       ),
     );
   }
-}
+
+  // Fungsi bantuan diletakkan DI DALAM class CoursesPage
+  Widget _buildBody(bool isLoading, String? error, List<Course> courses) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error != null) {
+      return Center(
+        child: Text(
+          'Terjadi Kesalahan: $error',
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    if (courses.isEmpty) {
+      return const Center(child: Text('Tidak ada data courses.'));
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int jumlahKolom = constraints.maxWidth < 600
+            ? 1
+            : (constraints.maxWidth < 840 ? 2 : 3);
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: jumlahKolom,
+            childAspectRatio: jumlahKolom == 1 ? 4.0 : 3.0,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: courses.length,
+          itemBuilder: (context, index) {
+            return CourseCard(course: courses[index]);
+          },
+        );
+      },
+    );
+  }
+} // AKHIR DARI CLASS CoursesPage
 
 class CourseCard extends StatelessWidget {
   final Course course;
