@@ -18,9 +18,6 @@ Future<Map<String, dynamic>> loadStudentData() async {
   return jsonDecode(jsonString) as Map<String, dynamic>;
 }
 
-// ==========================================
-// TAHAP 6: MEMASANG PROVIDER DI PUNCAK APLIKASI
-// ==========================================
 void main() {
   runApp(
     ChangeNotifierProvider(
@@ -63,7 +60,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const CoursesPage(),
+    const CoursesPage(), // Telah dirombak di Tahap 7
     ProfilePage(),
   ];
 
@@ -171,7 +168,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE
+// 2. COURSES PAGE (Tahap 7 - Provider Setup)
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -182,7 +179,8 @@ class CoursesPage extends StatefulWidget {
 class _CoursesPageState extends State<CoursesPage> {
   late Future<Map<String, dynamic>> studentFuture;
 
-  Set<String> favoriteCourses = {};
+  // KITA HAPUS SETSTATE DAN VARIABEL LOKAL FAVORITE DI SINI!
+  // Semua sekarang diurus oleh Provider (CourseState).
 
   @override
   void initState() {
@@ -190,18 +188,14 @@ class _CoursesPageState extends State<CoursesPage> {
     studentFuture = loadStudentData();
   }
 
-  void toggleFavorite(String code) {
-    setState(() {
-      favoriteCourses.contains(code)
-          ? favoriteCourses.remove(code)
-          : favoriteCourses.add(code);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    // PENGGUNAAN WATCH(): Mendengarkan jumlah favorit
+    // Jika jumlah berubah, UI halaman ini akan di-rebuild
+    final jumlahFavorit = context.watch<CourseState>().favorites.length;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Materi (Lifting State)')),
+      appBar: AppBar(title: const Text('Daftar Materi (Provider)')),
       body: FutureBuilder<Map<String, dynamic>>(
         future: studentFuture,
         builder: (context, snapshot) {
@@ -214,6 +208,7 @@ class _CoursesPageState extends State<CoursesPage> {
 
           return Column(
             children: [
+              // Identitas Mahasiswa
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -221,12 +216,26 @@ class _CoursesPageState extends State<CoursesPage> {
                   horizontal: 16,
                 ),
                 color: Colors.blue[50],
-                child: const Text(
-                  '$studentId - $studentName',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '$studentId - $studentName',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Menampilkan hasil watch()
+                    Text(
+                      'Total Favorit Tersimpan: $jumlahFavorit',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.pink,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Expanded(
@@ -246,12 +255,8 @@ class _CoursesPageState extends State<CoursesPage> {
                       itemCount: courses.length,
                       itemBuilder: (context, index) {
                         final course = courses[index] as Map<String, dynamic>;
-                        return CourseCard(
-                          course: course,
-                          isFavorite: favoriteCourses.contains(course['code']),
-                          onFavoriteToggle: () =>
-                              toggleFavorite(course['code']),
-                        );
+                        // Tidak perlu lagi melempar isFavorite & Callback!
+                        return CourseCard(course: course);
                       },
                     );
                   },
@@ -267,31 +272,26 @@ class _CoursesPageState extends State<CoursesPage> {
 
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
-  final bool isFavorite;
-  final VoidCallback onFavoriteToggle;
 
-  const CourseCard({
-    super.key,
-    required this.course,
-    required this.isFavorite,
-    required this.onFavoriteToggle,
-  });
+  // Parameter lebih bersih karena Provider menangani sisanya
+  const CourseCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
     final isDone = course['status'] == 'done';
+    final courseCode = course['code'] as String;
+
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.hardEdge,
       child: InkWell(
-        onTap: () async {
-          final result = await Navigator.push(
+        onTap: () {
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => CourseDetailPage(course: course),
             ),
           );
-          if (result == true) onFavoriteToggle();
         },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -319,18 +319,27 @@ class CourseCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${course['code']} • ${course['credits']} SKS',
+                      '$courseCode • ${course['credits']} SKS',
                       style: TextStyle(color: Colors.grey[700]),
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.pink : Colors.grey,
-                ),
-                onPressed: onFavoriteToggle,
+              // PENGGUNAAN CONSUMER: Hanya widget IconButton ini yang akan dirender ulang saat state berubah
+              Consumer<CourseState>(
+                builder: (context, courseState, child) {
+                  final isFavorite = courseState.favorites.contains(courseCode);
+                  return IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? Colors.pink : Colors.grey,
+                    ),
+                    onPressed: () {
+                      // PENGGUNAAN READ(): Memanggil aksi tanpa mendengarkan (listen)
+                      context.read<CourseState>().toggleFavorite(courseCode);
+                    },
+                  );
+                },
               ),
             ],
           ),
@@ -504,7 +513,7 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
 }
 
 // ==========================================
-// COURSE DETAIL PAGE
+// COURSE DETAIL PAGE (Diperbarui dengan Provider)
 // ==========================================
 class CourseDetailPage extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -590,7 +599,18 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: () => Navigator.pop(context, true),
+                    onPressed: () {
+                      // Gunakan READ() juga di sini!
+                      context.read<CourseState>().toggleFavorite(
+                        widget.course['code'],
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Status Favorite Diubah!'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
