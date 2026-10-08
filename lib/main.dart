@@ -6,16 +6,23 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 
 import 'providers/course_provider.dart';
+// IMPORT MODEL COURSE YANG BARU DIBUAT
+import 'models/course.dart';
 
 // IDENTITAS MAHASISWA
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
 
-Future<Map<String, dynamic>> loadStudentData() async {
+// TAHAP 8: UBAH TIPE KEMBALIAN JSON MENJADI LIST<COURSE>
+Future<List<Course>> loadStudentData() async {
   final jsonString = await rootBundle.loadString(
     'assets/data/student_data.json',
   );
-  return jsonDecode(jsonString) as Map<String, dynamic>;
+  final Map<String, dynamic> data = jsonDecode(jsonString);
+  final List<dynamic> coursesJson = data['courses'];
+
+  // Mapping data JSON mentah menjadi Objek Course
+  return coursesJson.map((json) => Course.fromJson(json)).toList();
 }
 
 void main() {
@@ -60,7 +67,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const CoursesPage(), // Telah dirombak di Tahap 7
+    const CoursesPage(),
     ProfilePage(),
   ];
 
@@ -168,7 +175,7 @@ class HomePage extends StatelessWidget {
 }
 
 // ==========================================
-// 2. COURSES PAGE (Tahap 7 - Provider Setup)
+// 2. COURSES PAGE (Tahap 8 - Model Integration)
 // ==========================================
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -177,10 +184,8 @@ class CoursesPage extends StatefulWidget {
 }
 
 class _CoursesPageState extends State<CoursesPage> {
-  late Future<Map<String, dynamic>> studentFuture;
-
-  // KITA HAPUS SETSTATE DAN VARIABEL LOKAL FAVORITE DI SINI!
-  // Semua sekarang diurus oleh Provider (CourseState).
+  // Ubah future ini menerima List<Course>
+  late Future<List<Course>> studentFuture;
 
   @override
   void initState() {
@@ -190,13 +195,12 @@ class _CoursesPageState extends State<CoursesPage> {
 
   @override
   Widget build(BuildContext context) {
-    // PENGGUNAAN WATCH(): Mendengarkan jumlah favorit
-    // Jika jumlah berubah, UI halaman ini akan di-rebuild
     final jumlahFavorit = context.watch<CourseState>().favorites.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Materi (Provider)')),
-      body: FutureBuilder<Map<String, dynamic>>(
+      appBar: AppBar(title: const Text('Daftar Materi (Model)')),
+      // Ubah tipe FutureBuilder
+      body: FutureBuilder<List<Course>>(
         future: studentFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting)
@@ -204,11 +208,11 @@ class _CoursesPageState extends State<CoursesPage> {
           if (snapshot.hasError)
             return Center(child: Text('Gagal memuat: ${snapshot.error}'));
 
-          final courses = snapshot.data!['courses'] as List<dynamic>;
+          // Sekarang data langsung dikenali sebagai List of Course objects!
+          final courses = snapshot.data!;
 
           return Column(
             children: [
-              // Identitas Mahasiswa
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -227,7 +231,6 @@ class _CoursesPageState extends State<CoursesPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Menampilkan hasil watch()
                     Text(
                       'Total Favorit Tersimpan: $jumlahFavorit',
                       style: const TextStyle(
@@ -254,9 +257,8 @@ class _CoursesPageState extends State<CoursesPage> {
                       ),
                       itemCount: courses.length,
                       itemBuilder: (context, index) {
-                        final course = courses[index] as Map<String, dynamic>;
-                        // Tidak perlu lagi melempar isFavorite & Callback!
-                        return CourseCard(course: course);
+                        // Tidak ada casting JSON lagi di sini
+                        return CourseCard(course: courses[index]);
                       },
                     );
                   },
@@ -271,15 +273,16 @@ class _CoursesPageState extends State<CoursesPage> {
 }
 
 class CourseCard extends StatelessWidget {
-  final Map<String, dynamic> course;
+  // Sekarang menerima Model, bukan Map
+  final Course course;
 
-  // Parameter lebih bersih karena Provider menangani sisanya
   const CourseCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
-    final isDone = course['status'] == 'done';
-    final courseCode = course['code'] as String;
+    // Akses properti JAUH LEBIH BERSIH dengan notasi titik (.)
+    final isDone = course.status == 'done';
+    final courseCode = course.code;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -309,7 +312,7 @@ class CourseCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      course['title'],
+                      course.title,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -319,13 +322,12 @@ class CourseCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$courseCode • ${course['credits']} SKS',
+                      '$courseCode • ${course.credits} SKS',
                       style: TextStyle(color: Colors.grey[700]),
                     ),
                   ],
                 ),
               ),
-              // PENGGUNAAN CONSUMER: Hanya widget IconButton ini yang akan dirender ulang saat state berubah
               Consumer<CourseState>(
                 builder: (context, courseState, child) {
                   final isFavorite = courseState.favorites.contains(courseCode);
@@ -335,7 +337,6 @@ class CourseCard extends StatelessWidget {
                       color: isFavorite ? Colors.pink : Colors.grey,
                     ),
                     onPressed: () {
-                      // PENGGUNAAN READ(): Memanggil aksi tanpa mendengarkan (listen)
                       context.read<CourseState>().toggleFavorite(courseCode);
                     },
                   );
@@ -513,10 +514,11 @@ class _FeedbackFormWidgetState extends State<FeedbackFormWidget> {
 }
 
 // ==========================================
-// COURSE DETAIL PAGE (Diperbarui dengan Provider)
+// COURSE DETAIL PAGE
 // ==========================================
 class CourseDetailPage extends StatefulWidget {
-  final Map<String, dynamic> course;
+  // Menerima objek Course, bukan Map lagi
+  final Course course;
   const CourseDetailPage({super.key, required this.course});
 
   @override
@@ -543,18 +545,19 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
               ),
             ),
             const Divider(height: 30, thickness: 1),
+            // Mengakses data menggunakan notasi titik
             Text(
-              widget.course['title'],
+              widget.course.title,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
-              'Kode: ${widget.course['code']}',
+              'Kode: ${widget.course.code}',
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
-              'SKS: ${widget.course['credits']}',
+              'SKS: ${widget.course.credits}',
               style: const TextStyle(fontSize: 18),
             ),
 
@@ -600,9 +603,8 @@ class _CourseDetailPageState extends State<CourseDetailPage> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     onPressed: () {
-                      // Gunakan READ() juga di sini!
                       context.read<CourseState>().toggleFavorite(
-                        widget.course['code'],
+                        widget.course.code,
                       );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
