@@ -1,21 +1,28 @@
 // ==========================================
-// FILE: lib/main.dart (Tahap 11)
+// FILE: lib/main.dart (Tahap 12 Final)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/course_provider.dart';
+import 'services/course_service.dart';
+import 'repositories/course_repository.dart';
 import 'screens/home_screen.dart';
 import 'screens/courses_screen.dart';
 import 'screens/profile_screen.dart';
 
 void main() {
+  // 1. Buat Service
+  final courseService = CourseService();
+  // 2. Buat Repository dan masukkan Service ke dalamnya
+  final courseRepository = CourseRepository(courseService);
+
   runApp(
     ChangeNotifierProvider(
       create: (context) {
-        // PERUBAHAN: Panggil loadCourses() langsung saat Provider dibuat!
-        final provider = CourseState();
-        provider.loadCourses();
+        // 3. Buat Provider dan masukkan Repository ke dalamnya
+        final provider = CourseState(courseRepository);
+        provider.loadCourses(); // Jalankan load data
         return provider;
       },
       child: const CourseExplorerApp(),
@@ -62,7 +69,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    // KITA TIDAK BUTUH LAGI IF (!ISDATALOADED) DI SINI
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 840) {
