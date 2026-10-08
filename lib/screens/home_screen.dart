@@ -1,5 +1,5 @@
 // ==========================================
-// FILE BARU: lib/screens/home_screen.dart
+// FILE: lib/screens/home_screen.dart (Tahap 14 - Disempurnakan)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,102 +14,160 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final favoritData = context.watch<CourseState>().favoriteCoursesData;
+    // Memantau state dari Provider
+    final provider = context.watch<CourseState>();
+    final totalCourses = provider.courses.length;
+    final totalFavorites = provider.favorites.length;
+    final isLoading = provider.isLoading;
+    final error = provider.error;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Dashboard',
+          'Course Explorer v2',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: Column(
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            ) // Menangani state Loading
+          : error != null
+          ? Center(
+              child: Text(
+                'Terjadi Kesalahan: $error',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ) // Menangani state Error
+          : SingleChildScrollView(
+              // Menangani state Success (Data siap)
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Identitas Mahasiswa
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '$studentId • $studentName',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.indigo,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2. Row untuk summary Courses dan Favorites
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Courses',
+                                style: TextStyle(color: Colors.blueGrey),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '$totalCourses',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Favorites',
+                                style: TextStyle(color: Colors.blueGrey),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '$totalFavorites',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 3. List of topics based on mockup
+                  _buildTopicCard('Git & GitHub', 'done', Colors.green),
+                  const SizedBox(height: 12),
+                  _buildTopicCard('Dart Fundamentals', 'done', Colors.green),
+                  const SizedBox(height: 12),
+                  _buildTopicCard('State Management', 'active', Colors.green),
+                ],
+              ),
+            ),
+    );
+  }
+
+  // Fungsi bantuan
+  Widget _buildTopicCard(String title, String status, Color statusColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            color: Colors.blue[50],
-            child: Column(
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.person, size: 50, color: Colors.white),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Selamat Datang!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  '$studentId - $studentName',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 16),
-                ),
-              ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo,
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Mata Kuliah Favorit Anda:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 8),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
             ),
-          ),
-
-          Expanded(
-            child: favoritData.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.heart_broken, size: 60, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Belum ada materi favorit.',
-                          style: TextStyle(color: Colors.grey, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: favoritData.length,
-                    itemBuilder: (context, index) {
-                      final course = favoritData[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundColor: Colors.pink,
-                            child: Icon(
-                              Icons.favorite,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            course.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            '${course.code} • ${course.credits} SKS',
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            onPressed: () {
-                              context.read<CourseState>().toggleFavorite(
-                                course.code,
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
           ),
         ],
       ),
