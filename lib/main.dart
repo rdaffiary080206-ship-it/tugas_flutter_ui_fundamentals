@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: lib/main.dart (Tahap 12 Final)
+// FILE: lib/main.dart (Tahap 13)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,8 +7,11 @@ import 'package:provider/provider.dart';
 import 'providers/course_provider.dart';
 import 'services/course_service.dart';
 import 'repositories/course_repository.dart';
+
+// Import layar dari folder screens
 import 'screens/home_screen.dart';
 import 'screens/courses_screen.dart';
+import 'screens/favorites_screen.dart'; // <-- Halaman baru ditambahkan
 import 'screens/profile_screen.dart';
 
 void main() {
@@ -37,7 +40,7 @@ class CourseExplorerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Course Explorer',
+      title: 'Course Explorer v2',
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.grey[100],
         appBarTheme: const AppBarTheme(
@@ -61,9 +64,11 @@ class MainNavigationShell extends StatefulWidget {
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int currentIndex = 0;
 
+  // DAFTAR HALAMAN: Ditambahkan FavoritesPage di urutan ke-3
   final List<Widget> _pages = [
     const HomePage(),
     const CoursesPage(),
+    const FavoritesPage(), // <-- Halaman Favorit
     ProfilePage(),
   ];
 
@@ -71,6 +76,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // TAMPILAN UNTUK LAYAR KECIL (MOBILE) - MENGGUNAKAN BOTTOM NAVIGATION BAR
         if (constraints.maxWidth < 840) {
           return Scaffold(
             body: _pages[currentIndex],
@@ -85,13 +91,19 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   label: 'Courses',
                 ),
                 NavigationDestination(
+                  icon: Icon(Icons.favorite),
+                  label: 'Favorites',
+                ), // <-- Menu Favorit
+                NavigationDestination(
                   icon: Icon(Icons.person),
                   label: 'Profile',
                 ),
               ],
             ),
           );
-        } else {
+        }
+        // TAMPILAN UNTUK LAYAR LEBAR (TABLET/DESKTOP) - MENGGUNAKAN NAVIGATION RAIL
+        else {
           return Scaffold(
             body: Row(
               children: [
@@ -112,6 +124,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                       icon: Icon(Icons.school),
                       label: Text('Courses'),
                     ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.favorite),
+                      label: Text('Favorites'),
+                    ), // <-- Menu Favorit
                     NavigationRailDestination(
                       icon: Icon(Icons.person),
                       label: Text('Profile'),
