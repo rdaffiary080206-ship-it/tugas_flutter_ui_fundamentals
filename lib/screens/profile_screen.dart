@@ -16,7 +16,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil (ValueNotifier)')),
+      appBar: AppBar(title: const Text('Profil')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
