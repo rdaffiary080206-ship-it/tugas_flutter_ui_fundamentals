@@ -1,34 +1,14 @@
 // ==========================================
-// FILE: lib/screens/home_screen.dart (Tahap 3)
+// FILE: lib/screens/home_screen.dart (Tahap 5)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
 import '../providers/course_provider.dart';
-import '../models/course.dart'; // <-- Pastikan import model Course
+import '../models/course.dart';
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
-
-// URL API Latihan
-const String apiUrl = 'https://course-api-pearl.vercel.app/courses';
-
-// Fungsi Fetch yang sudah dikonversi ke Model Course (Tahap 3)
-Future<List<Course>> fetchCourses() async {
-  final response = await http.get(Uri.parse(apiUrl));
-  if (response.statusCode == 200) {
-    final List<dynamic> data = jsonDecode(response.body);
-    // Mengubah JSON mentah menjadi List objek Course
-    return data
-        .map((json) => Course.fromJson(json as Map<String, dynamic>))
-        .toList();
-  }
-  throw Exception('HTTP ${response.statusCode}');
-}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -37,7 +17,8 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Memantau state dari Provider
     final provider = context.watch<CourseState>();
-    final totalCourses = provider.courses.length;
+    final courses = provider.courses; // Ambil list course dari internet
+    final totalCourses = courses.length;
     final totalFavorites = provider.favorites.length;
     final isLoading = provider.isLoading;
     final error = provider.error;
@@ -50,18 +31,15 @@ class HomePage extends StatelessWidget {
         ),
       ),
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            ) // Menangani state Loading
+          ? const Center(child: CircularProgressIndicator())
           : error != null
           ? Center(
               child: Text(
                 'Terjadi Kesalahan: $error',
                 style: const TextStyle(color: Colors.red),
               ),
-            ) // Menangani state Error
+            )
           : SingleChildScrollView(
-              // Menangani state Success (Data siap)
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,7 +63,7 @@ class HomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // 2. Row untuk summary Courses dan Favorites
+                  // 2. Row untuk summary
                   Row(
                     children: [
                       Expanded(
@@ -150,62 +128,50 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // ==========================================
-                  // TOMBOL PENGUJIAN TAHAP 3
+                  // 3. DAFTAR MATERI DINAMIS DARI API
                   // ==========================================
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.cloud_download),
-                    label: const Text('Test GET API (Tahap 3)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
+                  const Text(
+                    'Daftar Materi:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
                     ),
-                    onPressed: () async {
-                      try {
-                        final courses = await fetchCourses();
-                        debugPrint(
-                          'Tahap 3 Sukses: Berhasil mengambil ${courses.length} course dari API',
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Tahap 3 Sukses: Model Course memuat ${courses.length} data!',
-                              ),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        debugPrint('Tahap 3 Error: $e');
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
-                  // 3. List of topics based on mockup
-                  _buildTopicCard('Git & GitHub', 'done', Colors.green),
-                  const SizedBox(height: 12),
-                  _buildTopicCard('Dart Fundamentals', 'done', Colors.green),
-                  const SizedBox(height: 12),
-                  _buildTopicCard('State Management', 'active', Colors.green),
+                  if (courses.isEmpty)
+                    const Center(child: Text('Belum ada data course.'))
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(), // Agar tidak bentrok dengan SingleChildScrollView
+                      itemCount: courses.length,
+                      itemBuilder: (context, index) {
+                        final course = courses[index];
+                        return _buildTopicCard(course);
+                      },
+                    ),
                 ],
               ),
             ),
     );
   }
 
-  // Fungsi bantuan
-  Widget _buildTopicCard(String title, String status, Color statusColor) {
+  // Fungsi bantuan disempurnakan untuk membaca objek Course
+  Widget _buildTopicCard(Course course) {
+    // Logika penentuan warna berdasarkan status otomatis
+    Color statusColor;
+    if (course.status == 'done') {
+      statusColor = Colors.green;
+    } else if (course.status == 'active') {
+      statusColor = Colors.blue;
+    } else {
+      statusColor = Colors.grey;
+    }
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -216,7 +182,7 @@ class HomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
+            course.title,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -224,13 +190,30 @@ class HomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Kode: ${course.code}', // Mengambil kode dari API
+                style: const TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                course.status.toUpperCase(), // Mengambil status dari API
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(
-            status,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: statusColor,
-            ),
+            'SKS: ${course.credits}', // Mengambil SKS dari API
+            style: const TextStyle(color: Colors.blueGrey, fontSize: 13),
           ),
         ],
       ),
