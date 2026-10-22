@@ -1,24 +1,32 @@
 // ==========================================
-// FILE BARU: lib/services/course_service.dart
+// FILE: lib/services/course_service.dart (Tahap 4)
 // ==========================================
 import 'dart:convert';
 
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:http/http.dart' as http;
 
 import '../models/course.dart';
 
 class CourseService {
-  Future<List<Course>> loadCourses() async {
-    // Membaca file JSON dari asset
-    final jsonString = await rootBundle.loadString(
-      'assets/data/student_data.json',
-    );
-    final Map<String, dynamic> data = jsonDecode(jsonString);
-    final List<dynamic> coursesJson = data['courses'];
+  // Pindahkan URL API ke sini
+  final String apiUrl = 'https://course-api-pearl.vercel.app/courses';
 
-    // Mengubah JSON mentah menjadi List objek Course
-    return coursesJson
-        .map((json) => Course.fromJson(json as Map<String, dynamic>))
-        .toList();
+  Future<List<Course>> loadCourses() async {
+    try {
+      // Menembak ke REST API internet
+      final response = await http.get(Uri.parse(apiUrl));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        // Mengubah JSON mentah menjadi List objek Course
+        return data
+            .map((json) => Course.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('Gagal memuat data: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error saat menghubungi server: $e');
+    }
   }
 }
