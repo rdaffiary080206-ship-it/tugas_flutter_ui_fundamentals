@@ -1,13 +1,29 @@
 // ==========================================
-// FILE: lib/screens/home_screen.dart (Tahap 14 - Disempurnakan)
+// FILE: lib/screens/home_screen.dart (Tahap 2)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'dart:convert'; // <-- Tambahan untuk JSON
+
+import 'package:http/http.dart' as http; // <-- Tambahan HTTP GET
 
 import '../providers/course_provider.dart';
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
+
+// URL API Latihan
+const String apiUrl = 'https://course-api-pearl.vercel.app/courses';
+
+// Fungsi Fetch sementara untuk Tahap 2
+Future<List<dynamic>> fetchCourses() async {
+  final response = await http.get(Uri.parse(apiUrl));
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+  throw Exception('HTTP ${response.statusCode}');
+}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -53,7 +69,7 @@ class HomePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      '$studentId • $studentName',
+                      '$studentId\n$studentName',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -125,6 +141,48 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ==========================================
+                  // TOMBOL PENGUJIAN TAHAP 2
+                  // ==========================================
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.cloud_download),
+                    label: const Text('Test GET API (Tahap 2)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
+                    onPressed: () async {
+                      try {
+                        final courses = await fetchCourses();
+                        debugPrint(
+                          'Tahap 2 Sukses: Berhasil mengambil ${courses.length} course dari API',
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Tahap 2 Sukses: Ditemukan ${courses.length} course!',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        debugPrint('Tahap 2 Error: $e');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
                   ),
                   const SizedBox(height: 24),
 
