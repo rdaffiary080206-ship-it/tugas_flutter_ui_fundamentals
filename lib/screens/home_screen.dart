@@ -1,11 +1,12 @@
 // ==========================================
-// FILE: lib/screens/home_screen.dart (Tahap 5)
+// FILE: lib/screens/home_screen.dart (Tahap 6)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/course_provider.dart';
 import '../models/course.dart';
+import 'add_course_screen.dart'; // <-- Import halaman form baru (Tahap 6)
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
@@ -17,7 +18,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Memantau state dari Provider
     final provider = context.watch<CourseState>();
-    final courses = provider.courses; // Ambil list course dari internet
+    final courses = provider.courses; // Ambil list course dari API
     final totalCourses = courses.length;
     final totalFavorites = provider.favorites.length;
     final isLoading = provider.isLoading;
@@ -145,7 +146,7 @@ class HomePage extends StatelessWidget {
                   else
                     ListView.builder(
                       shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(), // Agar tidak bentrok dengan SingleChildScrollView
+                      physics: const NeverScrollableScrollPhysics(), // Agar tidak bentrok scroll
                       itemCount: courses.length,
                       itemBuilder: (context, index) {
                         final course = courses[index];
@@ -155,10 +156,26 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+
+      // ==========================================
+      // TAHAP 6: TOMBOL TAMBAH COURSE
+      // ==========================================
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        onPressed: () {
+          // Navigasi ke halaman form tambah
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddCourseScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
-  // Fungsi bantuan disempurnakan untuk membaca objek Course
+  // Fungsi bantuan untuk Card Materi
   Widget _buildTopicCard(Course course) {
     // Logika penentuan warna berdasarkan status otomatis
     Color statusColor;
@@ -194,14 +211,14 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Kode: ${course.code}', // Mengambil kode dari API
+                'Kode: ${course.code}',
                 style: const TextStyle(
                   color: Colors.blueGrey,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                course.status.toUpperCase(), // Mengambil status dari API
+                course.status.toUpperCase(),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -212,7 +229,7 @@ class HomePage extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'SKS: ${course.credits}', // Mengambil SKS dari API
+            'SKS: ${course.credits}',
             style: const TextStyle(color: Colors.blueGrey, fontSize: 13),
           ),
         ],
