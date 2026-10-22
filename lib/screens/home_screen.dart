@@ -1,14 +1,15 @@
 // ==========================================
-// FILE: lib/screens/home_screen.dart (Tahap 2)
+// FILE: lib/screens/home_screen.dart (Tahap 3)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'dart:convert'; // <-- Tambahan untuk JSON
+import 'dart:convert';
 
-import 'package:http/http.dart' as http; // <-- Tambahan HTTP GET
+import 'package:http/http.dart' as http;
 
 import '../providers/course_provider.dart';
+import '../models/course.dart'; // <-- Pastikan import model Course
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
@@ -16,11 +17,15 @@ const String studentName = 'I Putu Anggara Rega Daffiary';
 // URL API Latihan
 const String apiUrl = 'https://course-api-pearl.vercel.app/courses';
 
-// Fungsi Fetch sementara untuk Tahap 2
-Future<List<dynamic>> fetchCourses() async {
+// Fungsi Fetch yang sudah dikonversi ke Model Course (Tahap 3)
+Future<List<Course>> fetchCourses() async {
   final response = await http.get(Uri.parse(apiUrl));
   if (response.statusCode == 200) {
-    return jsonDecode(response.body) as List<dynamic>;
+    final List<dynamic> data = jsonDecode(response.body);
+    // Mengubah JSON mentah menjadi List objek Course
+    return data
+        .map((json) => Course.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
   throw Exception('HTTP ${response.statusCode}');
 }
@@ -145,11 +150,11 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // ==========================================
-                  // TOMBOL PENGUJIAN TAHAP 2
+                  // TOMBOL PENGUJIAN TAHAP 3
                   // ==========================================
                   ElevatedButton.icon(
                     icon: const Icon(Icons.cloud_download),
-                    label: const Text('Test GET API (Tahap 2)'),
+                    label: const Text('Test GET API (Tahap 3)'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
@@ -159,20 +164,20 @@ class HomePage extends StatelessWidget {
                       try {
                         final courses = await fetchCourses();
                         debugPrint(
-                          'Tahap 2 Sukses: Berhasil mengambil ${courses.length} course dari API',
+                          'Tahap 3 Sukses: Berhasil mengambil ${courses.length} course dari API',
                         );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Tahap 2 Sukses: Ditemukan ${courses.length} course!',
+                                'Tahap 3 Sukses: Model Course memuat ${courses.length} data!',
                               ),
                               backgroundColor: Colors.green,
                             ),
                           );
                         }
                       } catch (e) {
-                        debugPrint('Tahap 2 Error: $e');
+                        debugPrint('Tahap 3 Error: $e');
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
