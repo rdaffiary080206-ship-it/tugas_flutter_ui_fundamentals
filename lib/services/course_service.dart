@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: lib/services/course_service.dart (Tahap 6)
-// ==========================================
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -26,17 +23,27 @@ class CourseService {
     }
   }
 
-  // TAHAP 6: Fungsi HTTP POST
   Future<Course> createCourse(Course course) async {
     final response = await http.post(
       Uri.parse(apiUrl),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(course.toJson()),
     );
-
     if (response.statusCode == 200 || response.statusCode == 201) {
       return Course.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     }
     throw Exception('Gagal membuat course');
+  }
+
+  // TAHAP 7: Tambahan Fungsi Update (PUT)
+  Future<void> updateCourse(int id, Course course) async {
+    final response = await http.put(
+      Uri.parse('$apiUrl/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(course.toJson()),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Gagal memperbarui course');
+    }
   }
 }

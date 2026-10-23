@@ -1,12 +1,13 @@
 // ==========================================
-// FILE: lib/screens/home_screen.dart (Tahap 6)
+// FILE: lib/screens/home_screen.dart (Tahap 7)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/course_provider.dart';
 import '../models/course.dart';
-import 'add_course_screen.dart'; // <-- Import halaman form baru (Tahap 6)
+import 'add_course_screen.dart';
+import 'edit_course_screen.dart'; // <-- Import halaman edit (Tahap 7)
 
 const String studentId = '2415051020';
 const String studentName = 'I Putu Anggara Rega Daffiary';
@@ -150,21 +151,19 @@ class HomePage extends StatelessWidget {
                       itemCount: courses.length,
                       itemBuilder: (context, index) {
                         final course = courses[index];
-                        return _buildTopicCard(course);
+                        // TAHAP 7: Menambahkan context ke fungsi agar bisa pindah halaman
+                        return _buildTopicCard(context, course);
                       },
                     ),
                 ],
               ),
             ),
 
-      // ==========================================
       // TAHAP 6: TOMBOL TAMBAH COURSE
-      // ==========================================
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         onPressed: () {
-          // Navigasi ke halaman form tambah
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddCourseScreen()),
@@ -175,9 +174,8 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Fungsi bantuan untuk Card Materi
-  Widget _buildTopicCard(Course course) {
-    // Logika penentuan warna berdasarkan status otomatis
+  // Fungsi bantuan untuk Card Materi (Tahap 7 - Ditambah tombol Edit)
+  Widget _buildTopicCard(BuildContext context, Course course) {
     Color statusColor;
     if (course.status == 'done') {
       statusColor = Colors.green;
@@ -198,15 +196,34 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            course.title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.indigo,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  course.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
+                  ),
+                ),
+              ),
+              // TOMBOL EDIT TAHAP 7
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.amber),
+                onPressed: () {
+                  // Navigasi ke halaman form edit dengan membawa data course yang dipilih
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditCourseScreen(course: course),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

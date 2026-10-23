@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: lib/providers/course_provider.dart (Tahap 6)
-// ==========================================
 import 'package:flutter/material.dart';
 
 import '../models/course.dart';
@@ -12,7 +9,7 @@ class CourseState extends ChangeNotifier {
 
   List<Course> courses = [];
   bool isLoading = false;
-  bool isSaving = false; // Flag untuk Loading Simpan (Langkah 37)
+  bool isSaving = false;
   String? error;
   final Set<String> favorites = {};
 
@@ -30,15 +27,31 @@ class CourseState extends ChangeNotifier {
     }
   }
 
-  // TAHAP 6: Proses Simpan Course Baru
   Future<bool> addCourse(Course course) async {
     isSaving = true;
     error = null;
     notifyListeners();
-
     try {
       await repository.createCourse(course);
-      await loadCourses(); // Langkah 40: Refresh list dengan fetch ulang
+      await loadCourses();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  // TAHAP 7: Proses Edit Course
+  Future<bool> editCourse(int id, Course course) async {
+    isSaving = true;
+    error = null;
+    notifyListeners();
+    try {
+      await repository.updateCourse(id, course);
+      await loadCourses(); // Refresh data dari server
       return true;
     } catch (e) {
       error = e.toString();
