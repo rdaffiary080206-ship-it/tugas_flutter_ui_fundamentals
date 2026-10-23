@@ -44,14 +44,37 @@ class CourseState extends ChangeNotifier {
     }
   }
 
-  // TAHAP 7: Proses Edit Course
   Future<bool> editCourse(int id, Course course) async {
     isSaving = true;
     error = null;
     notifyListeners();
     try {
       await repository.updateCourse(id, course);
-      await loadCourses(); // Refresh data dari server
+      await loadCourses();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      isSaving = false;
+      notifyListeners();
+    }
+  }
+
+  // TAHAP 8: Proses Hapus Course
+  Future<bool> removeCourse(int id, String code) async {
+    isSaving = true;
+    error = null;
+    notifyListeners();
+    try {
+      await repository.deleteCourse(id);
+
+      // Langkah 8: Hapus dari daftar favorites jika ada (mencegah data yatim)
+      if (favorites.contains(code)) {
+        favorites.remove(code);
+      }
+
+      await loadCourses(); // Refresh daftar UI
       return true;
     } catch (e) {
       error = e.toString();

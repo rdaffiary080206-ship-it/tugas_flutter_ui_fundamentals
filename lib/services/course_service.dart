@@ -1,7 +1,5 @@
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import '../models/course.dart';
 
 class CourseService {
@@ -12,9 +10,7 @@ class CourseService {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data
-            .map((json) => Course.fromJson(json as Map<String, dynamic>))
-            .toList();
+        return data.map((json) => Course.fromJson(json as Map<String, dynamic>)).toList();
       } else {
         throw Exception('Gagal memuat data: HTTP ${response.statusCode}');
       }
@@ -35,7 +31,6 @@ class CourseService {
     throw Exception('Gagal membuat course');
   }
 
-  // TAHAP 7: Tambahan Fungsi Update (PUT)
   Future<void> updateCourse(int id, Course course) async {
     final response = await http.put(
       Uri.parse('$apiUrl/$id'),
@@ -44,6 +39,16 @@ class CourseService {
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Gagal memperbarui course');
+    }
+  }
+
+  // TAHAP 8: Fungsi Hapus (DELETE)
+  Future<void> deleteCourse(int id) async {
+    final response = await http.delete(
+      Uri.parse('$apiUrl/$id'),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Gagal menghapus course');
     }
   }
 }
