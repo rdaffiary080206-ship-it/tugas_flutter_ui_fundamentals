@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/course_provider.dart';
-import 'services/course_service.dart';
-import 'repositories/course_repository.dart';
+import 'services/course_api_service.dart'; //
+import 'services/course_data_source.dart'; //
 
 // Import layar dari folder screens
 import 'screens/home_screen.dart';
@@ -15,10 +15,8 @@ import 'screens/favorites_screen.dart'; // <-- Halaman baru ditambahkan
 import 'screens/profile_screen.dart';
 
 void main() {
-  // 1. Buat Service
-  final courseService = CourseService();
-  // 2. Buat Repository dan masukkan Service ke dalamnya
-  final courseRepository = CourseRepository(courseService);
+  final CourseDataSource dataSource = CourseApiService();
+  final CourseRepository repository = CourseRepository(dataSource);
 
   runApp(
     ChangeNotifierProvider(

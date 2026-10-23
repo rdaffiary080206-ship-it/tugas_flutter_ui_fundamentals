@@ -1,20 +1,19 @@
+// ==========================================
+// FILE: lib/repositories/course_repository.dart (Tahap 9)
+// ==========================================
 import '../models/course.dart';
-import '../services/course_service.dart';
+import '../services/course_data_source.dart';
 
 class CourseRepository {
-  final CourseService service;
-  CourseRepository(this.service);
+  // Hanya menerima class apa saja yang mematuhi kontrak CourseDataSource
+  final CourseDataSource dataSource;
 
-  Future<List<Course>> getCourses() async => await service.loadCourses();
+  CourseRepository(this.dataSource);
 
+  Future<List<Course>> getCourses() async => await dataSource.getCourses();
   Future<Course> createCourse(Course course) async =>
-      await service.createCourse(course);
-
+      await dataSource.createCourse(course);
   Future<void> updateCourse(int id, Course course) async =>
-      await service.updateCourse(id, course);
-
-  // TAHAP 8: Meneruskan Delete ke Service
-  Future<void> deleteCourse(int id) async {
-    await service.deleteCourse(id);
-  }
+      await dataSource.updateCourse(id, course);
+  Future<void> deleteCourse(int id) async => await dataSource.deleteCourse(id);
 }
