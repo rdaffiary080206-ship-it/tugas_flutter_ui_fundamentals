@@ -1,29 +1,43 @@
 // ==========================================
-// FILE: lib/main.dart (Tahap 13)
+// FILE: lib/main.dart (Tahap 10 - Full Code)
 // ==========================================
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 
 import 'providers/course_provider.dart';
-import 'services/course_api_service.dart'; //
-import 'services/course_data_source.dart'; //
+import 'repositories/course_repository.dart';
+import 'services/course_api_service.dart'; 
+import 'services/course_data_source.dart';
 
-// Import layar dari folder screens
 import 'screens/home_screen.dart';
 import 'screens/courses_screen.dart';
-import 'screens/favorites_screen.dart'; // <-- Halaman baru ditambahkan
+import 'screens/favorites_screen.dart';
 import 'screens/profile_screen.dart';
 
-void main() {
+Future<void> main() async {
+  // 1. Wajib ditambahkan agar Supabase bisa diinisialisasi
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ==========================================
+  // 2. INISIALISASI SUPABASE
+  // ==========================================
+  // Hapus tulisan TEMPEL_... dan masukkan URL serta Anon Key Anda
+  await Supabase.initialize(
+    url: 'https://dpiztwltfyrfefyrjwfq.supabase.co',
+    anonKey: 'sb_publishable_RY9l0nxNGL9H8r_Yi7WkoQ_WTYvFs81',
+  );
+
+  // 3. Perakitan Repository Pattern (Tahap 9)
   final CourseDataSource dataSource = CourseApiService();
   final CourseRepository repository = CourseRepository(dataSource);
 
+  // 4. Jalankan Aplikasi dengan Provider
   runApp(
     ChangeNotifierProvider(
       create: (context) {
-        // 3. Buat Provider dan masukkan Repository ke dalamnya
-        final provider = CourseState(courseRepository);
-        provider.loadCourses(); // Jalankan load data
+        final provider = CourseState(repository);
+        provider.loadCourses(); // Muat data pertama kali
         return provider;
       },
       child: const CourseExplorerApp(),
@@ -31,114 +45,20 @@ void main() {
   );
 }
 
+// 5. Widget Utama Aplikasi
 class CourseExplorerApp extends StatelessWidget {
   const CourseExplorerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Course Data Manager',
       debugShowCheckedModeBanner: false,
-      title: 'Course Explorer v2',
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.grey[100],
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
-          elevation: 2,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
       ),
-      home: const MainNavigationShell(),
-    );
-  }
-}
-
-class MainNavigationShell extends StatefulWidget {
-  const MainNavigationShell({super.key});
-
-  @override
-  State<MainNavigationShell> createState() => _MainNavigationShellState();
-}
-
-class _MainNavigationShellState extends State<MainNavigationShell> {
-  int currentIndex = 0;
-
-  // DAFTAR HALAMAN: Ditambahkan FavoritesPage di urutan ke-3
-  final List<Widget> _pages = [
-    const HomePage(),
-    const CoursesPage(),
-    const FavoritesPage(), // <-- Halaman Favorit
-    ProfilePage(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // TAMPILAN UNTUK LAYAR KECIL (MOBILE) - MENGGUNAKAN BOTTOM NAVIGATION BAR
-        if (constraints.maxWidth < 840) {
-          return Scaffold(
-            body: _pages[currentIndex],
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: currentIndex,
-              onDestinationSelected: (index) =>
-                  setState(() => currentIndex = index),
-              destinations: const [
-                NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-                NavigationDestination(
-                  icon: Icon(Icons.school),
-                  label: 'Courses',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.favorite),
-                  label: 'Favorites',
-                ), // <-- Menu Favorit
-                NavigationDestination(
-                  icon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-              ],
-            ),
-          );
-        }
-        // TAMPILAN UNTUK LAYAR LEBAR (TABLET/DESKTOP) - MENGGUNAKAN NAVIGATION RAIL
-        else {
-          return Scaffold(
-            body: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: (index) =>
-                      setState(() => currentIndex = index),
-                  labelType: NavigationRailLabelType.all,
-                  selectedIconTheme: const IconThemeData(
-                    color: Colors.blueAccent,
-                  ),
-                  destinations: const [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.school),
-                      label: Text('Courses'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.favorite),
-                      label: Text('Favorites'),
-                    ), // <-- Menu Favorit
-                    NavigationRailDestination(
-                      icon: Icon(Icons.person),
-                      label: Text('Profile'),
-                    ),
-                  ],
-                ),
-                const VerticalDivider(thickness: 1, width: 1),
-                Expanded(child: _pages[currentIndex]),
-              ],
-            ),
-          );
-        }
-      },
+      home: const HomePage(),
     );
   }
 }
