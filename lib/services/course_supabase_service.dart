@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: lib/services/course_supabase_service.dart (Tahap 12)
+// FILE: lib/services/course_supabase_service.dart
 // ==========================================
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,47 +7,39 @@ import '../models/course.dart';
 import 'course_data_source.dart';
 
 class CourseSupabaseService implements CourseDataSource {
-  // Mengambil instance klien Supabase yang sudah diinisialisasi di main.dart
-  final _supabase = Supabase.instance.client;
+  final supabase = Supabase.instance.client;
 
+  // TAHAP 12: SELECT
   @override
   Future<List<Course>> getCourses() async {
-    // GET (Membaca semua data dan mengurutkannya berdasarkan ID)
-    final response = await _supabase
-        .from('courses')
-        .select()
-        .order('id', ascending: true);
-    return response.map((json) => Course.fromJson(json)).toList();
+    final data = await supabase.from('courses').select().order('id');
+
+    return (data as List)
+        .map((e) => Course.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
+  // TAHAP 13: INSERT
   @override
   Future<Course> createCourse(Course course) async {
-    // POST (Menambah data baru)
-    final Map<String, dynamic> data = course.toJson();
-    data.remove(
-      'id',
-    ); // Hapus ID agar Supabase membuat ID otomatis secara berurutan
-
-    final response = await _supabase
+    final row = await supabase
         .from('courses')
-        .insert(data)
+        .insert(course.toJson())
         .select()
         .single();
-    return Course.fromJson(response);
+
+    return Course.fromJson(row);
   }
 
+  // TAHAP 14: UPDATE
   @override
   Future<void> updateCourse(int id, Course course) async {
-    // PUT/PATCH (Memperbarui data berdasarkan ID)
-    final Map<String, dynamic> data = course.toJson();
-    data.remove('id');
-
-    await _supabase.from('courses').update(data).eq('id', id);
+    await supabase.from('courses').update(course.toJson()).eq('id', id);
   }
 
+  // TAHAP 15: DELETE
   @override
   Future<void> deleteCourse(int id) async {
-    // DELETE (Menghapus data berdasarkan ID)
-    await _supabase.from('courses').delete().eq('id', id);
+    await supabase.from('courses').delete().eq('id', id);
   }
 }
