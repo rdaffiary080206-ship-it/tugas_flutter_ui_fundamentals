@@ -1,18 +1,20 @@
-# flutter_ui_fundamentals
+# Course Data Manager (Explorer v2)
 
-A new Flutter project.
+## Deskripsi Aplikasi
 
-## Getting Started
+Aplikasi manajemen data mata kuliah (Course) yang mendukung operasi CRUD (Create, Read, Update, Delete) secara penuh. Aplikasi ini merupakan pengembangan dari Course Explorer v2 yang kini telah dilengkapi dengan integrasi RESTful API dan database persisten.
 
-This project is a starting point for a Flutter application.
+## Cara Menjalankan
 
-A few resources to get you started if this is your first Flutter project:
+1. Pastikan Flutter SDK telah terinstal dengan benar.
+2. Buka terminal di direktori proyek dan jalankan `flutter pub get` untuk mengunduh dependencies (seperti `http`, `provider`, dan `supabase_flutter`).
+3. Jalankan aplikasi menggunakan emulator atau physical device dengan perintah `flutter run`.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Arsitektur
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-Endpoint API Latihan: [https://course-api-pearl.vercel.app/courses](https://course-api-pearl.vercel.app/courses)
+Aplikasi ini menggunakan Arsitektur Berlapis (Layered Architecture) berbasis **Repository Pattern** dengan State Management **Provider**. Alur aliran datanya dipisahkan secara bersih:
+`UI (Screen)` ➔ `State (Provider)` ➔ `Repository` ➔ `Service/DataSource`.
+
+## Backend
+
+Backend menggunakan **Supabase (PostgreSQL)** yang terintegrasi secara langsung menggunakan SDK `supabase_flutter`. Akses data dilakukan tanpa mengekspos `service_role` key pada client.
