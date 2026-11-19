@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../app_keys.dart';
 import '../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -12,13 +13,16 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _nameC = TextEditingController();
   final _emailC = TextEditingController();
   final _passC = TextEditingController();
   final _confirmC = TextEditingController();
+  String _role = 'student';
   bool _loading = false;
 
   @override
   void dispose() {
+    _nameC.dispose();
     _emailC.dispose();
     _passC.dispose();
     _confirmC.dispose();
@@ -26,8 +30,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _showMessage(String msg, {Color? color}) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
+    messengerKey.currentState?.showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: color),
+    );
   }
 
   Future<void> _register() async {
@@ -37,26 +42,25 @@ class _RegisterPageState extends State<RegisterPage> {
       final res = await AuthService.instance.register(
         email: _emailC.text.trim(),
         password: _passC.text,
+        name: _nameC.text.trim(),
+        role: _role,
       );
       if (res.session != null) {
-        // Logout sementara agar pengguna bisa menguji alur Login di Praktik 1
+        // onAuthStateChange di main.dart otomatis mengarahkan ke LoginPage
         await AuthService.instance.logout();
-        if (!mounted) return;
         _showMessage(
           'Registrasi berhasil. Silakan login.',
           color: Colors.green,
         );
-        Navigator.of(context).pop();
       } else {
-        if (!mounted) return;
         _showMessage('Registrasi berhasil. Silakan cek email Anda.');
-        Navigator.of(context).pop();
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
       }
     } on AuthException catch (e) {
-      if (!mounted) return;
       _showMessage(e.message, color: Colors.red);
     } catch (_) {
-      if (!mounted) return;
       _showMessage('Terjadi kesalahan. Coba lagi.', color: Colors.red);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -74,6 +78,32 @@ class _RegisterPageState extends State<RegisterPage> {
           child: ListView(
             children: [
               const SizedBox(height: 8),
+              TextFormField(
+                controller: _nameC,
+                decoration: const InputDecoration(
+                  labelText: 'Nama',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _role,
+                decoration: const InputDecoration(
+                  labelText: 'Daftar sebagai',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'student', child: Text('Student')),
+                  DropdownMenuItem(
+                    value: 'instructor',
+                    child: Text('Instructor'),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _role = v ?? 'student'),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _emailC,
                 keyboardType: TextInputType.emailAddress,
