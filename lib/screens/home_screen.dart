@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
           ),
           body: isLoading
               ? const Center(child: CircularProgressIndicator())
-              : error != null
+              : (error != null && courses.isEmpty)
               ? Center(
                   child: Text(
                     'Terjadi Kesalahan: $error',
