@@ -465,9 +465,27 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            'SKS: ${course.credits}',
-            style: const TextStyle(color: Colors.blueGrey, fontSize: 13),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'SKS: ${course.credits}',
+                style: const TextStyle(color: Colors.blueGrey, fontSize: 13),
+              ),
+              if (course.ownerId != null)
+                Text(
+                  course.ownerId == profile.id
+                      ? 'Pemilik: Anda'
+                      : 'Pemilik: Instructor lain',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: course.ownerId == profile.id
+                        ? Colors.indigo
+                        : Colors.orange.shade800,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

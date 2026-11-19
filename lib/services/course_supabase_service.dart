@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: lib/services/course_supabase_service.dart
-// ==========================================
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/course.dart';
@@ -9,7 +6,6 @@ import 'course_data_source.dart';
 class CourseSupabaseService implements CourseDataSource {
   final supabase = Supabase.instance.client;
 
-  // TAHAP 12: SELECT
   @override
   Future<List<Course>> getCourses() async {
     final data = await supabase.from('courses').select().order('id');
@@ -19,27 +15,63 @@ class CourseSupabaseService implements CourseDataSource {
         .toList();
   }
 
-  // TAHAP 13: INSERT
   @override
   Future<Course> createCourse(Course course) async {
-    final row = await supabase
-        .from('courses')
-        .insert(course.toJson())
-        .select()
-        .single();
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Pengguna belum login.');
+    }
 
-    return Course.fromJson(row);
+    final payload = {...course.toJson(), 'owner_id': user.id};
+
+    try {
+      final row = await supabase
+          .from('courses')
+          .insert(payload)
+          .select()
+          .single();
+
+      return Course.fromJson(row);
+    } on PostgrestException catch (e) {
+      throw Exception('Ditolak RLS (${e.code}): ${e.message}');
+    }
   }
 
-  // TAHAP 14: UPDATE
   @override
   Future<void> updateCourse(int id, Course course) async {
-    await supabase.from('courses').update(course.toJson()).eq('id', id);
+    try {
+      final rows = await supabase
+          .from('courses')
+          .update(course.toJson())
+          .eq('id', id)
+          .select();
+
+      if ((rows as List).isEmpty) {
+        throw Exception(
+          'Akses ditolak RLS: Anda hanya dapat mengubah course milik Anda sendiri.',
+        );
+      }
+    } on PostgrestException catch (e) {
+      throw Exception('Ditolak RLS (${e.code}): ${e.message}');
+    }
   }
 
-  // TAHAP 15: DELETE
   @override
   Future<void> deleteCourse(int id) async {
-    await supabase.from('courses').delete().eq('id', id);
+    try {
+      final rows = await supabase
+          .from('courses')
+          .delete()
+          .eq('id', id)
+          .select();
+
+      if ((rows as List).isEmpty) {
+        throw Exception(
+          'Akses ditolak RLS: Anda hanya dapat menghapus course milik Anda sendiri.',
+        );
+      }
+    } on PostgrestException catch (e) {
+      throw Exception('Ditolak RLS (${e.code}): ${e.message}');
+    }
   }
 }
