@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../services/profile_service.dart';
 import '../widgets/role_guard.dart';
 import 'add_course_screen.dart';
@@ -38,6 +40,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _copyFcmToken() async {
+    final token = NotificationService.instance.fcmToken;
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'FCM Token belum tersedia. Pastikan izin notifikasi (Allow) sudah diberikan.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: token));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('FCM Token berhasil disalin ke clipboard!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CourseState>();
@@ -46,6 +71,7 @@ class _HomePageState extends State<HomePage> {
     final totalFavorites = provider.favorites.length;
     final isLoading = provider.isLoading;
     final error = provider.error;
+    final fcmToken = NotificationService.instance.fcmToken;
 
     return FutureBuilder<UserProfile?>(
       future: _profileFuture,
@@ -239,6 +265,62 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
+
+                      // Kartu Status FCM Push Notification
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.notifications_active,
+                              size: 20,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'FCM Push Notification Active',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    fcmToken != null
+                                        ? 'Token: ${fcmToken.substring(0, 22)}...'
+                                        : 'Menunggu FCM Token...',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.blueGrey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: _copyFcmToken,
+                              icon: const Icon(Icons.copy, size: 16),
+                              label: const Text(
+                                'Salin Token',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 8),
 
                       // 3. Row summary
@@ -336,7 +418,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-          // Tombol Tambah Course hanya tampil untuk Instructor / Admin
           floatingActionButton: canManageCourses
               ? FloatingActionButton(
                   backgroundColor: Colors.indigo,
@@ -401,7 +482,6 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Semua role bisa menandai favorit
                   IconButton(
                     tooltip: isFav ? 'Hapus Favorit' : 'Tandai Favorit',
                     icon: Icon(
@@ -410,7 +490,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                     onPressed: () => provider.toggleFavorite(course.code),
                   ),
-                  // Edit & Delete hanya tampil untuk Instructor / Admin
                   RoleGuard(
                     userRole: profile.role,
                     allowedRoles: const ['instructor', 'admin'],
