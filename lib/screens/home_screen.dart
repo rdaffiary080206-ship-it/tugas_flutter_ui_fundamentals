@@ -5,6 +5,7 @@ import '../models/course.dart';
 import '../providers/course_provider.dart';
 import '../services/auth_service.dart';
 import '../services/profile_service.dart';
+import '../widgets/role_guard.dart';
 import 'add_course_screen.dart';
 import 'edit_course_screen.dart';
 import 'login_page.dart';
@@ -74,6 +75,8 @@ class _HomePageState extends State<HomePage> {
           );
         }
 
+        final canManageCourses = profile.isInstructor || profile.isAdmin;
+
         return Scaffold(
           appBar: AppBar(
             title: Text(
@@ -121,7 +124,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 2. Kartu Profil Pengguna & Role (Tugas 3)
+                      // 2. Kartu Profil Pengguna & Role
                       Card(
                         elevation: 0,
                         color: Colors.indigo.shade50,
@@ -158,9 +161,7 @@ class _HomePageState extends State<HomePage> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          profile.isInstructor ||
-                                              profile.isAdmin
+                                      color: canManageCourses
                                           ? Colors.indigo
                                           : Colors.teal,
                                       borderRadius: BorderRadius.circular(12),
@@ -200,7 +201,45 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+
+                      // Info hak akses khusus Student
+                      RoleGuard(
+                        userRole: profile.role,
+                        allowedRoles: const ['student'],
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.teal.shade200),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Colors.teal,
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Mode Student (Read-Only): Anda dapat melihat materi dan menandai favorit. Pengelolaan course khusus Instructor.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.teal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
 
                       // 3. Row summary
                       Row(
@@ -286,31 +325,44 @@ class _HomePageState extends State<HomePage> {
                           itemCount: courses.length,
                           itemBuilder: (context, index) {
                             final course = courses[index];
-                            return _buildTopicCard(context, course);
+                            return _buildTopicCard(
+                              context,
+                              course,
+                              profile,
+                              provider,
+                            );
                           },
                         ),
                     ],
                   ),
                 ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddCourseScreen(),
-                ),
-              );
-            },
-            child: const Icon(Icons.add),
-          ),
+          // Tombol Tambah Course hanya tampil untuk Instructor / Admin
+          floatingActionButton: canManageCourses
+              ? FloatingActionButton(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddCourseScreen(),
+                      ),
+                    );
+                  },
+                  child: const Icon(Icons.add),
+                )
+              : null,
         );
       },
     );
   }
 
-  Widget _buildTopicCard(BuildContext context, Course course) {
+  Widget _buildTopicCard(
+    BuildContext context,
+    Course course,
+    UserProfile profile,
+    CourseState provider,
+  ) {
     Color statusColor;
     if (course.status == 'done') {
       statusColor = Colors.green;
@@ -319,6 +371,8 @@ class _HomePageState extends State<HomePage> {
     } else {
       statusColor = Colors.grey;
     }
+
+    final isFav = provider.favorites.contains(course.code);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -347,23 +401,44 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Semua role bisa menandai favorit
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.amber),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              EditCourseScreen(course: course),
-                        ),
-                      );
-                    },
+                    tooltip: isFav ? 'Hapus Favorit' : 'Tandai Favorit',
+                    icon: Icon(
+                      isFav ? Icons.star : Icons.star_border,
+                      color: isFav ? Colors.orange : Colors.grey,
+                    ),
+                    onPressed: () => provider.toggleFavorite(course.code),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      _showDeleteConfirmation(context, course);
-                    },
+                  // Edit & Delete hanya tampil untuk Instructor / Admin
+                  RoleGuard(
+                    userRole: profile.role,
+                    allowedRoles: const ['instructor', 'admin'],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Edit Course',
+                          icon: const Icon(Icons.edit, color: Colors.amber),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditCourseScreen(course: course),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          tooltip: 'Hapus Course',
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            _showDeleteConfirmation(context, course);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
